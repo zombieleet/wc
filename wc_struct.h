@@ -3,18 +3,19 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+
 struct word_count {
   int  line_number;
   int  character_number;
   int  words_number;
-  void (*no_argument)(FILE * stream);
+  void (*no_argument)(FILE * stream, char * filename);
   void (*print_details)(int len, ...);
   void (*character_argument)(char * data);
   void (*word_argument)(char * data);
   void (*line_argument)(char * data);
 };
 
-extern void no_argument(FILE * stream);
+extern void no_argument(FILE * stream, char * filename);
 extern void print_details(int len, ...);
 extern void character_argument(char * data);
 extern void word_argument(char * data);

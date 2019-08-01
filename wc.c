@@ -11,37 +11,42 @@
 void single_option(char opt, char * data);
 void multiple_option(char * opt);
 void process_multiple_short_option(char * opt);
+void process_argument_for_files();
 
 int main(int argc , char ** argv ) {
 
   // from stdin print all argument
   if ( argc == 1 ) {
-    wc.no_argument(stdin);
+    wc.no_argument(stdin,NULL);
     return EXIT_SUCCESS;
   }
+
+  int ARGUMENT_EXISTS = 0;
 
   for ( int i = 1; i < argc ; i++ ) {
 
     if ( argv[i][0] == '-' && argv[i][1] != '-' ) {
       if ( argv[i][2] == ' ' ) single_option(argv[i][1], NULL); //short option e.g -o
       else process_multiple_short_option(argv[i]);
+      ARGUMENT_EXISTS = 1;
       continue;
     }
 
     //long option e.g --output
-    if ( argv[i][1] == '-' ) multiple_option(argv[i]);
-    else  {
+    if ( argv[i][1] == '-' ) {
+      multiple_option(argv[i]);
+      ARGUMENT_EXISTS = 1;
+    } else  {
       FILE * fp = fopen(argv[i],"r");
       if ( ! fp ) {
         perror(strerror(errno));
         exit(1);
       }
-      wc.no_argument(fp); //operate on file
+      wc.no_argument(fp,argv[i]); //operate on file
     }
 
   }
 
-  puts("\n");
 
   return EXIT_SUCCESS;
 }

@@ -2,7 +2,7 @@
 #include <stdarg.h>
 #include "wc_struct.h"
 
-void no_argument(FILE * stream) {
+void no_argument(FILE * stream, char * filename) {
   while ( ! feof(stream) ) {
     char c = fgetc(stream);
     if ( c == ( '\0' | EOF ) ) break;
@@ -11,7 +11,7 @@ void no_argument(FILE * stream) {
     }
     wc.character_number++;
   }
-  wc.print_details(3, wc.line_number, wc.words_number, wc.character_number);
+  wc.print_details(3, wc.line_number, wc.words_number, wc.character_number , filename);
 }
 
 void print_details(int len , ...) {
@@ -23,6 +23,11 @@ void print_details(int len , ...) {
     int d = va_arg(params, int);
     fprintf(stdout, "\t%d", d);
   }
+
+  char * fname = va_arg(params, char *);
+
+  if ( fname != NULL ) fprintf(stdout, "\t%s", fname);
+
   return ;
 }
 

@@ -125,6 +125,7 @@ void print_details(int len , ...) {
   return ;
 }
 struct word_count_ops character_argument(struct file_data * stream_ds, FILE * stream) {
+  if ( feof(stream) ) rewind(stream);
   while ( !feof(stream) ) {
     char c = fgetc(stream);
     if ( c == ( '\0' | '\n' | EOF ) ) break;
@@ -134,6 +135,7 @@ struct word_count_ops character_argument(struct file_data * stream_ds, FILE * st
 }
 
 struct word_count_ops line_argument(struct file_data * stream_ds, FILE * stream) {
+  if ( feof(stream) ) rewind(stream);
   while (!feof(stream)) {
     char c = fgetc(stream);
     if ( c == EOF ) break;
@@ -143,6 +145,7 @@ struct word_count_ops line_argument(struct file_data * stream_ds, FILE * stream)
 }
 
 struct word_count_ops word_argument(struct file_data * stream_ds, FILE * stream) {
+  if ( feof(stream) ) rewind(stream);
   //puts("word");
   return wc;
 }

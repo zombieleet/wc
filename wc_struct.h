@@ -21,34 +21,35 @@ struct total_struct {
 };
 
 
-struct word_count_ops {
-  void (*no_argument)(struct file_data * stream_ds);
-  void (*print_details)(int len, ...);
-  void (*character_argument)(char * data);
-  void (*word_argument)(char * data);
-  void (*line_argument)(char * data);
-  int  length;
-  struct total_struct total;
-};
-
 struct operation_argument {
   int LINE_ARGUMENT;
   int CHARACTER_ARGUMENT;
   int WORDS_COUNT_ARGUMENT;
 };
 
-extern void no_argument(struct file_data * stream_ds);
+
+struct word_count_ops {
+  void (*start_operation)(struct file_data * stream_ds, struct operation_argument * ops_argument);
+  void (*print_details)(int len, ...);
+  struct word_count_ops (*character_argument)(struct file_data * stream_ds, FILE * stream);
+  struct word_count_ops (*word_argument)(struct file_data * stream_ds, FILE * stream);
+  struct word_count_ops (*line_argument)(struct file_data * stream_ds, FILE * stream);
+  int  length;
+  struct total_struct total;
+};
+
+extern void start_operation(struct file_data * stream_ds,  struct operation_argument * ops_argument);
 extern void print_details(int len, ...);
-extern void character_argument(char * data);
-extern void word_argument(char * data);
-extern void line_argument(char * data);
+extern struct word_count_ops character_argument(struct file_data * stream_ds, FILE * stream);
+extern struct word_count_ops word_argument(struct file_data * stream_ds, FILE * stream);
+extern struct word_count_ops line_argument(struct file_data * stream_ds, FILE * stream);
 
 struct word_count_ops wc = {
-  .no_argument = no_argument,
-  .print_details = print_details
-  //  .character_argument = character_argument,
-  //  .word_argument = word_argument,
-  // .line_argument = line_argument
+  .start_operation = start_operation,
+  .print_details = print_details,
+  .character_argument = character_argument,
+  .word_argument = word_argument,
+  .line_argument = line_argument
 };
 
 #endif

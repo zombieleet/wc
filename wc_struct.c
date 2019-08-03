@@ -2,18 +2,81 @@
 #include <stdarg.h>
 #include "wc_struct.h"
 
-void read_no_argument_data(struct file_data * stream_ds) {
+
+#define SWITCH(arg)                             \
+  call_site = 1;                                \
+  call_site_value = arg
+#define CASE(arg,ops)                                       {      \
+    if ( call_site != 1 ) {                                        \
+      fprintf(stderr, "no SWITCH macro called\n");                 \
+      exit(1);                                                  \
+    }                                                           \
+    if ( strcmp(arg,call_site_value) != 0) ops;      \
+  }
+
+
+int call_site  = 0;
+int call_out   = 0;
+
+void * call_site_value = NULL;
+
+void selective_output_for_options(struct file_data * stream_ds , FILE * stream, struct operation_argument * ops_argument) {
+
+  if ( ops_argument->CHARACTER_ARGUMENT == 1 && ops_argument->WORDS_COUNT_ARGUMENT == 1 ) {
+    wc.character_argument(stream_ds,stream).word_argument(stream_ds,stream);
+    wc.print_details(2, stream_ds->character_number, stream_ds->words_count, stream_ds->filename);
+    return;
+  }
+
+  if ( ops_argument->CHARACTER_ARGUMENT == 1 && ops_argument->LINE_ARGUMENT == 1  ) {
+    wc.line_argument(stream_ds,stream).character_argument(stream_ds,stream);
+    wc.print_details(2, stream_ds->line_number, stream_ds->character_number, stream_ds->filename);
+    return;
+  }
+
+  if ( ops_argument->LINE_ARGUMENT == 1 && ops_argument->WORDS_COUNT_ARGUMENT == 1 ) {
+    wc.line_argument(stream_ds,stream).word_argument(stream_ds,stream);
+    wc.print_details(2, stream_ds->line_number, stream_ds->words_count, stream_ds->filename);
+    return;
+  }
+
+  // one of this below conditionals will be true
+  // if the above fails
+
+  if ( ops_argument->CHARACTER_ARGUMENT == 1 ) {
+    wc.character_argument(stream_ds,stream);
+    wc.print_details(1, stream_ds->character_number, stream_ds->filename);
+    return;
+  }
+
+  if ( ops_argument->LINE_ARGUMENT == 1 ) {
+    wc.line_argument(stream_ds,stream);
+    wc.print_details(1, stream_ds->line_number, stream_ds->filename);
+    return;
+  }
+
+  if ( ops_argument->WORDS_COUNT_ARGUMENT == 1 ) {
+    wc.word_argument(stream_ds,stream);
+    wc.print_details(1, stream_ds->words_count, stream_ds->filename);
+    return;
+  }
+
+  return;
+}
+
+void read_start_operation_data(struct file_data * stream_ds, struct operation_argument * ops_argument) {
 
   FILE * stream = stream_ds->stream != NULL ? stream_ds->stream : stdin;
 
-  while ( ! feof(stream) ) {
-    char c = fgetc(stream);
-    if ( c == ( '\0' | EOF ) ) break;
-    if ( c == '\n' ) {
-      stream_ds->line_number++;
+  if ( ops_argument == NULL )
+    while ( ! feof(stream) ) {
+      char c = fgetc(stream);
+      if ( c == ( '\0' | EOF ) ) break;
+      if ( c == '\n' ) {
+        stream_ds->line_number++;
+      }
+      stream_ds->character_number++;
     }
-    stream_ds->character_number++;
-  }
 
   if ( wc.length > 1 ) {
     wc.total.line_number_total      += stream_ds->line_number;
@@ -21,25 +84,28 @@ void read_no_argument_data(struct file_data * stream_ds) {
     wc.total.character_number_total += stream_ds->character_number;
   }
 
-  wc.print_details(3, stream_ds->line_number, stream_ds->words_count, stream_ds->character_number , stream_ds->filename);
+  if ( ops_argument == NULL ) {
+    wc.print_details(3, stream_ds->line_number, stream_ds->words_count, stream_ds->character_number , stream_ds->filename);
+    return;
+  }
+
+  return selective_output_for_options(stream_ds, stream , ops_argument);
 }
 
-void no_argument(struct file_data * stream_ds) {
+void start_operation(struct file_data * stream_ds,  struct operation_argument * ops_argument ) {
   // if we are reading from stdin
   // then stream_ds->stream should be null
-  if ( stream_ds->stream == NULL ) return read_no_argument_data(stream_ds);
+  if ( stream_ds->stream == NULL ) return read_start_operation_data(stream_ds,NULL);
 
   // when we are reading from a file when there is no argument
-
   for ( stream_ds ; stream_ds->next != NULL ;  ) {
-    read_no_argument_data(stream_ds);
+    read_start_operation_data(stream_ds,ops_argument);
     stream_ds = stream_ds->next;
     if ( stream_ds->previous ) {
       free(stream_ds->previous);
       stream_ds->previous = NULL;
     }
   }
-
 }
 
 void print_details(int len , ...) {
@@ -54,53 +120,29 @@ void print_details(int len , ...) {
 
   char * fname = va_arg(params, char *);
 
-  if ( fname != NULL ) fprintf(stdout, "\t%s", fname);
-
-  fprintf(stdout, "\n");
+  if ( fname != NULL ) fprintf(stdout, "\t%s\n", fname);
 
   return ;
 }
+struct word_count_ops character_argument(struct file_data * stream_ds, FILE * stream) {
+  while ( !feof(stream) ) {
+    char c = fgetc(stream);
+    if ( c == ( '\0' | '\n' | EOF ) ) break;
+    stream_ds->character_number++;
+  }
+  return wc;
+}
 
-/* void character_argument(char * data) { */
+struct word_count_ops line_argument(struct file_data * stream_ds, FILE * stream) {
+  while (!feof(stream)) {
+    char c = fgetc(stream);
+    if ( c == EOF ) break;
+    if ( c == '\n' ) stream_ds->line_number++;
+  }
+  return wc;
+}
 
-/*   if ( data == NULL ) { */
-/*     while ( !feof(stdin) ) { */
-/*       char c = fgetc(stdin); */
-/*       if ( c == ( '\0' | '\n' | EOF ) ) break; */
-/*       wc.character_number++; */
-/*     } */
-/*     wc.print_details(1, wc.character_number); */
-/*     return; */
-/*   } */
-
-/*   for ( int i = 0 ; i < strlen(data); i++ ) { */
-/*     if ( data[i] == '\0' ) continue; */
-/*     wc.character_number++; */
-/*   } */
-
-/*   wc.print_details(1, wc.character_number); */
-/*   return; */
-
-/* } */
-
-/* void line_argument(char * data) { */
-/*   if ( data == NULL ) { */
-/*     while (!feof(stdin)) { */
-/*       char c = fgetc(stdin); */
-/*       if ( c == EOF ) break; */
-/*       if ( c == '\n' ) wc.line_number++; */
-/*     } */
-/*     wc.print_details(1, wc.line_number); */
-/*     return; */
-/*   } */
-
-/*   for ( int i = 0; i < strlen(data); i++ ) { */
-/*     if ( data[i] == '\n' ) wc.line_number++; */
-/*   } */
-/*   wc.print_details(1,wc.line_number); */
-/*   return; */
-/* } */
-
-/* void word_argument(char * data) { */
-/*   //puts("word"); */
-/* } */
+struct word_count_ops word_argument(struct file_data * stream_ds, FILE * stream) {
+  //puts("word");
+  return wc;
+}

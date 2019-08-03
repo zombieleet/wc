@@ -8,7 +8,7 @@
 
 #define DEFAULT_BUFFER_SIZE 3
 
-void single_option(char opt, char * data);
+void single_option(char opt, struct operation_argument * ops_argument);
 void multiple_option(char * opt, struct operation_argument * ops_argument);
 void process_multiple_short_option(char * opt , struct operation_argument * ops_argument);
 void process_argument_for_files();
@@ -25,7 +25,7 @@ int main(int argc , char ** argv ) {
 
   // from stdin print all argument
   if ( argc == 1 ) {
-    wc.no_argument(stream_ds);
+    wc.start_operation(stream_ds,NULL);
     return EXIT_SUCCESS;
   }
 
@@ -34,8 +34,14 @@ int main(int argc , char ** argv ) {
   for ( int i = 1; i < argc ; i++ ) {
 
     if ( argv[i][0] == '-' && argv[i][1] != '-' ) {
-      if ( argv[i][2] == ' ' ) single_option(argv[i][1], NULL); //short option e.g -o
-      else process_multiple_short_option(argv[i], ops_argument);
+      if ( argv[i][2] == ' ' ) single_option(argv[i][1],ops_argument); //short option e.g -o
+      else {
+        // arguments like -lwc where l is --line , w is --word and c is --chars
+        char * opt = argv[i];
+        for ( int i = 1 ; i < strlen(opt) ; i++ ) {
+          single_option(opt[i],ops_argument);
+        }
+      }
       continue;
     }
 
@@ -61,7 +67,6 @@ int main(int argc , char ** argv ) {
       stream_ds                 = stream_ds->next;
 
       wc.length += 1;
-      //wc.no_argument(fp,argv[i]); //operate on file
     }
 
   }
@@ -69,13 +74,21 @@ int main(int argc , char ** argv ) {
   /**
      This conditional statement handles a situation were
      no option was specified except file names
+     or
+     the complete options were specified
+
+     if ops_argument->CHARACTER_ARGUMENT  = ops_argument->LINE_ARGUMENT
+     and ops_argument->CHARACTER_ARGUMENT = ops_argument->WORD_COUNT_ARGUMENT
+     then ops_argument->LINE_ARGUMENT     = ops_argument->WORD_COUNT_ARGUMENT
    **/
 
   if (
-      ops_argument->CHARACTER_ARGUMENT   == 0  &&
-      ops_argument->LINE_ARGUMENT        == 0  &&
-      ops_argument->WORDS_COUNT_ARGUMENT == 0
-      ) wc.no_argument(HEAD);
+      ops_argument->CHARACTER_ARGUMENT  == ops_argument->LINE_ARGUMENT        &&
+      ops_argument->CHARACTER_ARGUMENT  == ops_argument->WORDS_COUNT_ARGUMENT
+      ) wc.start_operation(HEAD,NULL);
+  else wc.start_operation(HEAD,ops_argument);
+
+
 
 
   // if more than one file was specified as a parameter
@@ -89,19 +102,21 @@ int main(int argc , char ** argv ) {
   stream_ds    = NULL;
   ops_argument = NULL;
 
+  fprintf(stdout, "\n");
+
   return EXIT_SUCCESS;
 }
 
-void single_option(char opt, char * data) {
+void single_option(char opt, struct operation_argument * ops_argument ) {
   switch(opt) {
   case 'c':
-    //wc.character_argument(data);
+    ops_argument->CHARACTER_ARGUMENT = 1;
     break;
   case 'w':
-    //wc.word_argument(data);
+    ops_argument->WORDS_COUNT_ARGUMENT = 1;
     break;
   case 'l':
-    //wc.line_argument(data);
+    ops_argument->LINE_ARGUMENT = 1;
     break;
   default:
     fprintf(stderr, "Invalid argument\n");
@@ -123,34 +138,30 @@ void multiple_option(char * opt, struct operation_argument * ops_argument ) {
 // arguments like -lwc where l is --line , w is --word and c is --chars
 void process_multiple_short_option(char * opt , struct operation_argument * ops_argument) {
 
-  char ** buf       = calloc(DEFAULT_BUFFER_SIZE, sizeof(char));
-  char *  container = calloc(DEFAULT_BUFFER_SIZE, sizeof(char));
-  size_t bufSize = DEFAULT_BUFFER_SIZE;
+  /* char ** buf       = calloc(DEFAULT_BUFFER_SIZE, sizeof(char)); */
+  /* char *  container = calloc(DEFAULT_BUFFER_SIZE, sizeof(char)); */
+  /* size_t bufSize = DEFAULT_BUFFER_SIZE; */
 
-  int reallocBufSize = DEFAULT_BUFFER_SIZE;
+  /* int reallocBufSize = DEFAULT_BUFFER_SIZE; */
 
-  while ( ! feof(stdin) ) {
+  /* while ( ! feof(stdin) ) { */
 
-    int f = getline(buf, &bufSize , stdin);
+  /*   int f = getline(buf, &bufSize , stdin); */
 
-    if ( f == -1 ) break;
+  /*   if ( f == -1 ) break; */
 
-    if ( ( strlen(container) + strlen(*buf)) >= reallocBufSize ) {
-      reallocBufSize = strlen(container) + strlen(*buf);
-      container = reallocarray(container, reallocBufSize + DEFAULT_BUFFER_SIZE, sizeof(char));
-      if ( ! container ) {
-        fprintf(stderr, "Error allocating memory\n");
-        exit(1);
-      }
-    }
-    strncat( container, *buf , strlen(*buf));
-  }
+  /*   if ( ( strlen(container) + strlen(*buf)) >= reallocBufSize ) { */
+  /*     reallocBufSize = strlen(container) + strlen(*buf); */
+  /*     container = reallocarray(container, reallocBufSize + DEFAULT_BUFFER_SIZE, sizeof(char)); */
+  /*     if ( ! container ) { */
+  /*       fprintf(stderr, "Error allocating memory\n"); */
+  /*       exit(1); */
+  /*     } */
+  /*   } */
+  /*   strncat( container, *buf , strlen(*buf)); */
+  /* } */
 
 
-  for ( int i = 1 ; i < strlen(opt) ; i++ ) {
-    single_option(opt[i],container);
-  }
-
-  free(container);
-  container = NULL;
+  /* free(container); */
+  /* container = NULL; */
 }
